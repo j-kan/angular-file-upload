@@ -1,0 +1,30 @@
+{
+  "name": "angular-file-upload",
+  "main": [
+    "dist/angular-file-upload.js",
+    "dist/angular-file-upload.min.js",
+    "dist/angular-file-upload-shim.js",
+    "dist/angular-file-upload-shim.min.js",
+    "dist/angular-file-upload-html5-shim.js",
+    "dist/angular-file-upload-html5-shim.min.js",
+    "dist/FileAPI.min.js",
+    "dist/FileAPI.flash.swf"
+  ],
+  "version": "1.6.12",
+  "homepage": "https://github.com/j-kan/angular-file-upload",
+  "authors": [
+    "danialf <danial.farid@gmail.com>",
+    "j-kan <j@intangible-industries.com>"
+  ],
+  "description": "angular-file-upload",
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "nuget",
+    "demo",
+    "Gruntfile.js"
+  ]
+}
