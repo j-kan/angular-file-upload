@@ -220,46 +220,73 @@ angularFileUpload.directive('ngFileDropAvailable', [ '$parse', '$timeout', funct
 } ]);
 
 angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', '$location', function($parse, $timeout, $location) {
-	return function(scope, elem, attr) {
+	return function(scope, $elem, attr) {
 		if ('draggable' in document.createElement('span')) {
-			var leaveTimeout = null;
-			elem[0].addEventListener("dragover", function(evt) {
+
+			var findFileDropElement = function () {
+				if (attr['ngFileDropSelector'])
+					return angular.element(document.getElementsByTagName(attr['ngFileDropSelector']));
+				else
+					return $elem;
+			};
+
+			var leaveTimeout = null,
+				elem         = findFileDropElement();
+				domElement   = elem[0];
+
+			var handleDragOver = function(evt) {
 				evt.preventDefault();
 				$timeout.cancel(leaveTimeout);
-				if (!elem[0].__drag_over_class_) {
+				if (!domElement.__drag_over_class_) {
 					if (attr['ngFileDragOverClass'] && attr['ngFileDragOverClass'].search(/\) *$/) > -1) {
 						var dragOverClass = $parse(attr['ngFileDragOverClass'])(scope, {
 							$event : evt
-						});					
-						elem[0].__drag_over_class_ = dragOverClass; 
+						});
+						domElement.__drag_over_class_ = dragOverClass;
 					} else {
-						elem[0].__drag_over_class_ = attr['ngFileDragOverClass'] || "dragover";
+						domElement.__drag_over_class_ = attr['ngFileDragOverClass'] || "dragover";
 					}
 				}
-				elem.addClass(elem[0].__drag_over_class_);
-			}, false);
-			elem[0].addEventListener("dragenter", function(evt) {
+				elem.addClass(domElement.__drag_over_class_);
+			};
+
+			var handleDragEnter = function(evt) {
 				evt.preventDefault();
-			}, false);
-			elem[0].addEventListener("dragleave", function(evt) {
+			};
+
+			var handleDragLeave = function(evt) {
 				leaveTimeout = $timeout(function() {
-					elem.removeClass(elem[0].__drag_over_class_);
-					elem[0].__drag_over_class_ = null;
+					elem.removeClass(domElement.__drag_over_class_);
+					domElement.__drag_over_class_ = null;
 				}, attr['ngFileDragOverDelay'] || 1);
-			}, false);
+			};
+
 			var fn = $parse(attr['ngFileDrop']);
-			elem[0].addEventListener("drop", function(evt) {
+
+			var handleDrop = function(evt) {
 				evt.preventDefault();
-				elem.removeClass(elem[0].__drag_over_class_);
-				elem[0].__drag_over_class_ = null;
+				elem.removeClass(domElement.__drag_over_class_);
+				domElement.__drag_over_class_ = null;
 				extractFiles(evt, function(files) {
 					fn(scope, {
 						$files : files,
 						$event : evt
-					});					
+					});
 				});
-			}, false);
-						
+			};
+
+			domElement.addEventListener("dragover",  handleDragOver,  false);
+			domElement.addEventListener("dragenter", handleDragEnter, false);
+			domElement.addEventListener("dragleave", handleDragLeave, false);
+			domElement.addEventListener("drop",      handleDrop,      false);
+
+			scope.$on('$destroy', function (evt) {
+				domElement.removeEventListener("dragover",  handleDragOver,  false);
+				domElement.removeEventListener("dragenter", handleDragEnter, false);
+				domElement.removeEventListener("dragleave", handleDragLeave, false);
+				domElement.removeEventListener("drop",      handleDrop,      false);
+			});
+
 			function isASCII(str) {
 				return /^[\000-\177]*$/.test(str);
 			}
