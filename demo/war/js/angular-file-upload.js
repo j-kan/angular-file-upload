@@ -223,7 +223,7 @@ angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', '$location', f
 	return function(scope, $elem, attr) {
 		if ('draggable' in document.createElement('span')) {
 
-			var findFileDropElement = function () {
+			function findFileDropElement() {
 				if (attr['ngFileDropSelector'])
 					return angular.element(document.getElementsByTagName(attr['ngFileDropSelector']));
 				else
@@ -232,59 +232,59 @@ angularFileUpload.directive('ngFileDrop', [ '$parse', '$timeout', '$location', f
 
 			var leaveTimeout = null,
 				elem         = findFileDropElement();
-				domElement   = elem[0];
+				domElement   = elem[0],
+				fn 			 = $parse(attr['ngFileDrop']);
 
-			var handleDragOver = function(evt) {
-				evt.preventDefault();
-				$timeout.cancel(leaveTimeout);
-				if (!domElement.__drag_over_class_) {
-					if (attr['ngFileDragOverClass'] && attr['ngFileDragOverClass'].search(/\) *$/) > -1) {
-						var dragOverClass = $parse(attr['ngFileDragOverClass'])(scope, {
-							$event : evt
-						});
-						domElement.__drag_over_class_ = dragOverClass;
-					} else {
-						domElement.__drag_over_class_ = attr['ngFileDragOverClass'] || "dragover";
-					}
-				}
-				elem.addClass(domElement.__drag_over_class_);
-			};
+			var eventHandlers = {
 
-			var handleDragEnter = function(evt) {
-				evt.preventDefault();
-			};
+					dragover: function(evt) {
+							evt.preventDefault();
+							$timeout.cancel(leaveTimeout);
+							if (!domElement.__drag_over_class_) {
+								if (attr['ngFileDragOverClass'] && attr['ngFileDragOverClass'].search(/\) *$/) > -1) {
+									var dragOverClass = $parse(attr['ngFileDragOverClass'])(scope, {
+										$event : evt
+									});
+									domElement.__drag_over_class_ = dragOverClass;
+								} else {
+									domElement.__drag_over_class_ = attr['ngFileDragOverClass'] || "dragover";
+								}
+							}
+							elem.addClass(domElement.__drag_over_class_);
+						},
 
-			var handleDragLeave = function(evt) {
-				leaveTimeout = $timeout(function() {
-					elem.removeClass(domElement.__drag_over_class_);
-					domElement.__drag_over_class_ = null;
-				}, attr['ngFileDragOverDelay'] || 1);
-			};
+					dragenter: function(evt) {
+							evt.preventDefault();
+						},
 
-			var fn = $parse(attr['ngFileDrop']);
+					dragleave: function(evt) {
+							leaveTimeout = $timeout(function() {
+								elem.removeClass(domElement.__drag_over_class_);
+								domElement.__drag_over_class_ = null;
+							}, attr['ngFileDragOverDelay'] || 1);
+						},
 
-			var handleDrop = function(evt) {
-				evt.preventDefault();
-				elem.removeClass(domElement.__drag_over_class_);
-				domElement.__drag_over_class_ = null;
-				extractFiles(evt, function(files) {
-					fn(scope, {
-						$files : files,
-						$event : evt
-					});
-				});
-			};
+					drop: function(evt) {
+							evt.preventDefault();
+							elem.removeClass(domElement.__drag_over_class_);
+							domElement.__drag_over_class_ = null;
+							extractFiles(evt, function(files) {
+								fn(scope, {
+									$files : files,
+									$event : evt
+								});
+							});
+						}
+				};
 
-			domElement.addEventListener("dragover",  handleDragOver,  false);
-			domElement.addEventListener("dragenter", handleDragEnter, false);
-			domElement.addEventListener("dragleave", handleDragLeave, false);
-			domElement.addEventListener("drop",      handleDrop,      false);
+			angular.forEach(eventHandlers, function (handler, eventName) {
+				domElement.addEventListener(eventName, handler, false);
+			})
 
 			scope.$on('$destroy', function (evt) {
-				domElement.removeEventListener("dragover",  handleDragOver,  false);
-				domElement.removeEventListener("dragenter", handleDragEnter, false);
-				domElement.removeEventListener("dragleave", handleDragLeave, false);
-				domElement.removeEventListener("drop",      handleDrop,      false);
+				angular.forEach(eventHandlers, function (handler, eventName) {
+					domElement.removeEventListener(eventName, handler, false);
+				})
 			});
 
 			function isASCII(str) {
